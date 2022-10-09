@@ -1,4 +1,4 @@
->>> import arcpy
+ >>> import arcpy
 >>> arcpy.env.overwriteOutput = True
 ---------------------------------------------------------------------------------
 
@@ -1293,7 +1293,8 @@ del cursor
  except:
  print 'An error occurred'
  traceback.print_exc()
- del cursor 
+ del cursor 
+
 
 -----------------------------------------------------------------
 
@@ -1483,7 +1484,8 @@ except:
 >>> query1 = "SizeClass = 'A'" # Fires of size class A.
 >>> query2 = "FireName <> 'MEADOW'" # Fires not named MEADOW.
 >>> query3 = 'FID > 6' # Fires with ID greater than 6 .
->>> query4 = "StartTime = date '2000-01-06'" # After Jan.6,2000
+>>> query4 = "StartTime = date '2000-01-06'" # After Jan.6,2000
+
         
 -----------------------------------------------------------------
 
@@ -1527,7 +1529,8 @@ except:
 ---------------------------------------------------------------
         
 dictionaryName = {key1 : value1, key2 : value2, key3 : value3}
-                
+        
+        
 ---------------------------------------------------------------
 
 # weekdays.py
@@ -1708,7 +1711,8 @@ Total area {1}'''.format(k, median)
 ---------------------------------------------------------------
 
 >>> with open('C:/gispy/data/ch19/poem.txt', 'r') as f:
-... print f.read() 
+... print f.read() 
+
         
 ---------------------------------------------------------------
 >>> f = open('C:/gispy/data/ch19/poem.txt', 'r')
@@ -1796,7 +1800,8 @@ label = line[1].rstrip()
  print "{0} doesn't exist.".format(infile)
 ---------------------------------------------------------------
 >>> mylist = ['a','b','c','d']
->>> mylist.index('c')
+>>> mylist.index('c')
+
 ---------------------------------------------------------------
 
 # fieldIndex.py
@@ -2704,76 +2709,307 @@ def updateMessages(self, parameters):
 contain any rasters.')
  return      
 ---------------------------------------------------------------
----------------------------------------------------------------
 
+def execute(self, parameters, messages):
+ '''Calculate the Sine of each input raster.'''
+ arcpy.CheckOutExtension('Spatial')
+ arcpy.env.overwriteOutput = True
+ arcpy.env.workspace = parameters[0].value # Set the workspace
+ for rast in parameters[1].values:
+ try:
+ outSin = arcpy.sa.Sin(rast)
+ outSin.save(rast + '_Sin')
+ message = '{0}_Sin created in {1}.'.format(rast,
+ arcpy.env.workspace)
+ arcpy.AddMessage(message)
+ except:
+message = '{0}_Sin could not be created.'.format(rast)
+arcpy.AddMessage(message)       
 ---------------------------------------------------------------
-
+def execute(self, parameters, messages):
+ '''Calculate the Sine of each input raster.'''
+ import rastModule
+ wkspace = parameters[0].value
+ rasters = parameters[1].values
+ rastModule.batchSine(wkspace, rasters) 
 ---------------------------------------------------------------
-
+ # rastModule.py
+ import arcpy
+ def batchSine(workspace, rastList):
+ '''Calculate the Sine of each raster in the list.'''
+ arcpy.CheckOutExtension('Spatial')
+ arcpy.env.overwriteOutput = True
+ arcpy.env.workspace = workspace # Set the workspace
+ for rast in rastList:
+ try:
+ outSin = arcpy.sa.Sin(rast)
+ outSin.save(rast+'_Sin')
+ message = '{0}_Sin created in {1}.'.format(rast,
+ arcpy.env.workspace)
+ arcpy.AddMessage(message)
+ except:
+message = '{0}_Sin could not be created.'.format(rast)
+arcpy.AddMessage(message)
 ---------------------------------------------------------------
+def execute(self, parameters, messages):
+ # From combineFields.py
+ # Purpose: Create a new field that is the sum
+ # of two existing fields.
+ dataset = parameters[0].value.value
+ field1 = parameters[1].value
+ field2 = parameters[2].value
+ newfield = parameters[3].value
+ arcpy.AddField_management(dataset, newfield)
+ expression = '!{0}!+!{1}!'.format(field1, field2)
+ arcpy.CalculateField_management(dataset, newfield,
+ expression, 'PYTHON')
+ arcpy.SetParameterAsText(4,dataset)
 ---------------------------------------------------------------
-
+ def getParameterInfo(self):
+ '''Create parameters and set their properties'''
+ # Input_file
+ param1 = arcpy.Parameter()
+ param1.name = 'Input_file'
+ param1.displayName = 'Input file'
+ param1.parameterType = 'Required'
+param1.direction = 'Input'
+ param1.datatype = 'Feature Class'
+ # Field1
+ param2 = arcpy.Parameter()
+ param2.name = 'Field1'
+ param2.displayName = 'Field 1'
+ param2.parameterType = 'Required'
+ param2.direction = 'Input'
+ param2.datatype = 'Field'
+ param2.parameterDependencies = [param1.name]
 ---------------------------------------------------------------
-
+def getAbsPath(relativePath):
+'''Return the absolute path given a relative path to this file'''
+ tbxPath = os.path.abspath(file
+ tbxDir = os.path.dirname(tbxPath)
+ fullPath = os.path.join(tbxDir, relativePath)
+ return os.path.abspath(fullPath)
+---------------------------------------------------------------
+>>> myMap = 'C:/gispy/data/ch24/maps/dataSourceExample.mxd'
+>>> mxd = arcpy.mapping.MapDocument(myMap)
 ---------------------------------------------------------------        
-
-
----------------------------------------------------------------
----------------------------------------------------------------
+>>> arcpy.mapping.ListBrokenDataSources(mxd)
 
 ---------------------------------------------------------------
+# mapToPhoto.py
+# Purpose: Export the 'Layout view' of a map as a PNG image.
+# Usage: fullpath_mxd_filename fullpath_output_png_filename
+# Sample input: C:/gispy/data/ch24/maps/landCover.mxd
+# C:/gispy/scratch/getty_map.png
+# Note: Portable Network Graphic (PNG) is an image format used for
+# Internet content.
+# Many other map export formats are available.
+import arcpy, sys
+# Full path names of an existing map and an image to create.
+mapName = sys.argv[1]
+imageName = sys.argv[2]
+# Create a MapDocument object.
+mxd = arcpy.mapping.MapDocument(mapName)
+# Create an image of the map in 'Layout view'
+arcpy.mapping.ExportToPNG(mxd, imageName)
+print '{0} created.'.format(imageName)
+# Delete the MapDocument object.
+del mxd 
+---------------------------------------------------------------
+>>> # File name of an existing map
+>>> mapName = arcpy.env.workspace + '/landCover.mxd'
+>>> # Create a MapDocument object.
+>>> mxd = arcpy.mapping.MapDocument(mapName)
+>>> mxd.author = 'Wonderful me!'
+                           
+---------------------------------------------------------------
+>>> mxd.activeView
+u'Southeast'
+>>> mxd.activeView = 'PAGE_LAYOUT'
+---------------------------------------------------------------
+>>> mxd.title
+u'Hey hey'
+>>> mxd.title = 'Eastern US'
+>>> arcpy.RefreshActiveView()
+---------------------------------------------------------------
+>>> mxd.relativePaths
+True
+>>> mxd.relativePaths = False                           
+---------------------------------------------------------------
+>>> mxd.saveACopy('modifiedMap.mxd')
+>>> import os
+>>> os.startfile('C:/gispy/data/ch24/maps/landCover.mxd')
+>>> mxd.save()
+---------------------------------------------------------------
+>>> dfs = arcpy.mapping.ListDataFrames(mxd)
+---------------------------------------------------------------
+>>> df = dfs[0]
+>>> df.name
+u'Northeast'
+>>> # Get the second data frame.
+>>> df2 = dfs[1]
+>>> df2.name
+u'Southeast'
+>>> df.description
+u''
+>>> df2.description = "My very cool data frame"
+>>> df2.description
+u'My very cool data frame'
+>>> df2.displayUnits 
+---------------------------------------------------------------
+>>> ext = df2.extent
+>>> ext.YMin
+29.99437527717719                          
+---------------------------------------------------------------
+>>> arcpy.SelectLayerByAttribute_management('VA')
+>>> df2.zoomToSelectedFeatures()
+---------------------------------------------------------------
+>>> layers = arcpy.mapping.ListLayers(mxd)
+>>> myLayer = layers[0]
+>>> myLayer.dataSource
+u'C:\\gispy\\data\\ch24\\USstates\\VT.shp'
+>>> myLayer.isFeatureLayer
+True
+>>> myLayer.isRasterLayer
+False 
+---------------------------------------------------------------
+>>> e = myLayer.getExtent()
+---------------------------------------------------------------
+>>> df.extent = myLayer.getExtent()                           
+---------------------------------------------------------------
+>>> layers = arcpy.mapping.ListLayers(mxd)
+>>> for myLayer in layers:
+... print myLayer.name
+---------------------------------------------------------------
+>>> # Get a list of DataFrame objects.
+>>> dfs = arcpy.mapping.ListDataFrames(mxd)
+>>> # Get the first DataFrame object.
+>>> df = dfs[0]
+>>> # Get a list of Layer objects in this data frame.
+>>> layers = arcpy.mapping.ListLayers(mxd, '*', df)
+>>> for myLayer in layers:
+... print myLayer.name
+---------------------------------------------------------------
+>>> mxd = arcpy.mapping.MapDocument('CURRENT')
+>>> dfs = arcpy.mapping.ListDataFrames(mxd)
+>>> df = dfs[0]
+>>> lyrs = arcpy.mapping.ListLayers(mxd)
 
 ---------------------------------------------------------------
-
+>>> layerToMove = lyrs[2]
+>>> layerToMove.name
+u'centers'
+>>> referenceLayer = lyrs[0]
+>>> referenceLayer.name
+u'cover'                           
 ---------------------------------------------------------------
+>>> arcpy.mapping.MoveLayer(df, referenceLayer, layerToMove, 'BEFORE')
 ---------------------------------------------------------------
-
+# removeLayers.py
+# Purpose: Remove the first layer in the table of contents.
+# Input: No arguments required.
+import arcpy
+# Get a MapDocument object.
+mxdName = 'layerManipExample2.mxd'
+mapPath = 'C:/gispy/data/ch24/maps/'
+mxd = arcpy.mapping.MapDocument(mapPath + mxdName)
+# Get a list of the DataFrame objects.
+dfs = arcpy.mapping.ListDataFrames(mxd)
+# Get the first DataFrame object.
+df = dfs[0]
+# Get a list of Layer objects in this data frame.
+lyrs = arcpy.mapping.ListLayers(mxd, '' , df)
+# Get the first Layer object.
+layerToRemove = lyrs[0]
+# Remove the layer.
+arcpy.mapping.RemoveLayer(df, layerToRemove)
+# Save a copy of the map.
+copyName = 'C:/gispy/scratch/' + mxdName[:-4] + '_V2.mxd'
+mxd.saveACopy(copyName)
+# Delete the MapDocument object to release the map.
+del mxd
 ---------------------------------------------------------------
-
+# addLayer.py
+# Purpose: Add a data layer to a map.
+# Input: No arguments required.
+import arcpy
+# Initialize data variables.
+arcpy.env.workspace = 'C:/gispy/data/ch24/maps/'
+fileName = '../USstates/MA.shp'
+mapName = 'layerManipExample3.mxd'
+# Instantiate MapDocument and DataFrame objects.
+mxd = arcpy.mapping.MapDocument(arcpy.env.workspace + '/' + mapName)
+dfs = arcpy.mapping.ListDataFrames(mxd)
+# Get the first data frame.
+df = dfs[0]
+# Instantiate a Layer object.
+layerObj = arcpy.mapping.Layer(fileName)
+# Add the new layer to the map.
+arcpy.mapping.AddLayer(df, layerObj)
+# Save a copy of the map. 
+copyName = 'C:/gispy/scratch/' + mapName[:-4] + '_V2.mxd'
+mxd.saveACopy(copyName)
+# Delete the MapDocument object to release the map.
+del mxd                           
 ---------------------------------------------------------------
-
+>>> mxd = arcpy.mapping.MapDocument('CURRENT')
+>>> dfs = arcpy.mapping.ListDataFrames(mxd)
+>>> df = dfs[0]
+>>> lyrs = arcpy.mapping.ListLayers(mxd)
+>>> layerToModify = lyrs[0]
+>>> layerToModify.symbologyType                          
 ---------------------------------------------------------------
+>>> layerToModify.symbologyType = 'GRADUATED_COLORS' 
 ---------------------------------------------------------------
-
+>>> srcLay = 'C:/gispy/data/ch24/symbolTraining/gradColorsNE.lyr'
+>>> srcLayObj = arcpy.mapping.Layer(srcLay)
+>>> arcpy.mapping.UpdateLayer(df, layerToModify, srcLayObj)
+>>> layerToModify.symbologyType
 ---------------------------------------------------------------
-
----------------------------------------------------------------
-
----------------------------------------------------------------
----------------------------------------------------------------
-
----------------------------------------------------------------
-
----------------------------------------------------------------
-
-
----------------------------------------------------------------
----------------------------------------------------------------
-
----------------------------------------------------------------
-
----------------------------------------------------------------
-
----------------------------------------------------------------
----------------------------------------------------------------
-
----------------------------------------------------------------
-
----------------------------------------------------------------
-
+>>> layerToModify.symbology.valueField
+u'Category'
+>>> layerToModify.symbology.valueField = 'AVE_FAM_SZ'
+>>> arcpy.RefreshActiveView()
+>>> layerToModify.symbology.numClasses
+5
+>>> layerToModify.symbology.numClasses = 3
+>>> arcpy.RefreshActiveView()
         
 ---------------------------------------------------------------
+>>> mxd = arcpy.mapping.MapDocument('CURRENT')
+>>> elems = arcpy.mapping.ListLayoutElements(mxd)
+>>> for e in elems:
+... print e.name                           
 ---------------------------------------------------------------
-
+>>> for e in elems:
+... if 'Title' in e.name:
+... title = e 
 ---------------------------------------------------------------
-
+>>> arrow = arcpy.mapping.ListLayoutElements(mxd,
+ 'MAPSURROUND_ELEMENT', '*Arrow*')[0]
+>>> arrow.name
 ---------------------------------------------------------------
-
+>>> title.text
+u'Map_Title'
+>>> title.text = 'USA'
+>>> arcpy.RefreshActiveView()
+>>> title.fontSize
+42.0
+>>> title.fontSize = 72
+>>> arcpy.RefreshActiveView()
 ---------------------------------------------------------------
+>>> dfs = arcpy.mapping.ListDataFrames(mxd)
+>>> df = dfs[0]
+>>> title.elementPositionX = df.elementPositionX + \
+ (df.elementWidth*0.5) - (title.elementWidth*0.5)
+>>> arcpy.RefreshActiveView()                           
 ---------------------------------------------------------------
-
+>>> title.elementPositionY = df.elementPositionY + \
+ df.elementHeight - title.elementHeight
+>>> arcpy.RefreshActiveView()
 ---------------------------------------------------------------
-
+>>> myExport = 'C:/gispy/scratch/noSurrounds.pdf'
+>>> arcpy.mapping.ExportToPDF(mxd, myExport)
 ---------------------------------------------------------------        
 
 
